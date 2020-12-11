@@ -35,20 +35,9 @@ module DeadEnd
 
     def call
       @blocks.each do |block|
-        around_lines = AroundBlockScan.new(code_lines: @code_lines, block: block)
-          .start_at_next_line
-          .capture_neighbor_context
-
-        around_lines -= block.lines
-
-        @lines_to_output.concat(around_lines)
-
-        AroundBlockScan.new(
-          block: block,
-          code_lines: @code_lines,
-        ).on_falling_indent do |line|
-          @lines_to_output << line
-        end
+        capture_last_end_same_indent(block)
+        capture_before_after_kws(block)
+        capture_falling_indent(block)
       end
 
       @lines_to_output.select!(&:not_empty?)
@@ -57,6 +46,40 @@ module DeadEnd
       @lines_to_output.sort!
 
       return @lines_to_output
+    end
+
+    def capture_falling_indent(block)
+      AroundBlockScan.new(
+        block: block,
+        code_lines: @code_lines,
+      ).on_falling_indent do |line|
+        @lines_to_output << line
+      end
+    end
+
+    def capture_before_after_kws(block)
+      around_lines = AroundBlockScan.new(code_lines: @code_lines, block: block)
+        .start_at_next_line
+        .capture_neighbor_context
+
+      around_lines -= block.lines
+
+      @lines_to_output.concat(around_lines)
+    end
+
+    def capture_last_end_same_indent(block)
+      start_index = block.visible_lines.first.index
+      lines = @code_lines[start_index..block.lines.last.index]
+      end_lines = lines.select {|line| line.indent == block.current_indent && (line.is_end? || line.is_kw?) }
+
+      # end_lines.each do |line|
+      #   end_index = line.index
+      #   lines = @code_lines[0..end_index].reverse
+      #   stop_next = false
+      #   lines.take_while
+      # end
+
+      @lines_to_output.concat(end_lines)
     end
   end
 end
