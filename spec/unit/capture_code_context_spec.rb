@@ -19,15 +19,16 @@ module DeadEnd
       )
       lines = display.call
 
-
-      # out = DisplayCodeWithLineNumbers.new(
-      #   lines: lines,
-      # ).call
-      # puts out
-
       lines = lines.sort.map(&:original)
       expect(lines.join).to eq(<<~EOM)
-        class Dog
+        class Rexe
+          VERSION = '1.5.1'
+          PROJECT_URL = 'https://github.com/keithrbennett/rexe'
+          class Lookups
+            def format_requires
+          end
+          class CommandLineParser
+          end
         end
       EOM
     end
@@ -50,6 +51,7 @@ module DeadEnd
       lines = display.call.sort.map(&:original)
       expect(lines.join).to eq(<<~EOM)
         class Dog
+          def bark
         end
       EOM
     end

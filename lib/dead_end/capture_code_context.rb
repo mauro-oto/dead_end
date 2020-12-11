@@ -73,8 +73,9 @@ module DeadEnd
       lines = @code_lines[start_index..block.lines.last.index]
       kw_end_lines = lines.select {|line| line.indent == block.current_indent && (line.is_end? || line.is_kw?) }
 
-      @lines_to_output.concat(kw_end_lines)
 
+      # TODO handle case of heredocs showing up here
+      #
       # Due to https://github.com/zombocom/dead_end/issues/32
       # There's a special case where a keyword right before the last
       # end of a valid block accidentally ends up identifying that the problem
@@ -106,6 +107,7 @@ module DeadEnd
 
         next if lines.empty?
 
+        @lines_to_output << end_line
         @lines_to_output << lines.first
         @lines_to_output << lines.last
       end
