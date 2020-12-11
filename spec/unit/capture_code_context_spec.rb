@@ -12,9 +12,6 @@ module DeadEnd
       search = CodeSearch.new(source)
       search.call
 
-      puts "========"
-      puts search.invalid_blocks.first.lines.first.number
-
       # expect(search.invalid_blocks.join.strip).to eq('class Dog')
       display = CaptureCodeContext.new(
         blocks: search.invalid_blocks,
@@ -23,10 +20,10 @@ module DeadEnd
       lines = display.call
 
 
-      out = DisplayCodeWithLineNumbers.new(
-        lines: lines,
-      ).call
-      puts out
+      # out = DisplayCodeWithLineNumbers.new(
+      #   lines: lines,
+      # ).call
+      # puts out
 
       lines = lines.sort.map(&:original)
       expect(lines.join).to eq(<<~EOM)

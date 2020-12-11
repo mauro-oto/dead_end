@@ -67,19 +67,48 @@ module DeadEnd
       @lines_to_output.concat(around_lines)
     end
 
+    # Problems heredocs are back in play
     def capture_last_end_same_indent(block)
       start_index = block.visible_lines.first.index
       lines = @code_lines[start_index..block.lines.last.index]
-      end_lines = lines.select {|line| line.indent == block.current_indent && (line.is_end? || line.is_kw?) }
+      kw_end_lines = lines.select {|line| line.indent == block.current_indent && (line.is_end? || line.is_kw?) }
 
-      # end_lines.each do |line|
-      #   end_index = line.index
-      #   lines = @code_lines[0..end_index].reverse
-      #   stop_next = false
-      #   lines.take_while
-      # end
+      @lines_to_output.concat(kw_end_lines)
 
-      @lines_to_output.concat(end_lines)
+      # Due to https://github.com/zombocom/dead_end/issues/32
+      # There's a special case where a keyword right before the last
+      # end of a valid block accidentally ends up identifying that the problem
+      # was with the block instead of before it. To handle that
+      # special case, we can re-parse back through the internals of blocks
+      # and if they have mis-matched keywords and ends show the last one
+      end_lines = kw_end_lines.select(&:is_end?)
+      end_lines.each_with_index  do |end_line, i|
+        start_index = i.zero? ? 0 : end_lines[i-1].index
+        end_index = end_line.index - 1
+        lines = @code_lines[start_index..end_index]
+
+        stop_next = false
+        kw_count = 0
+        end_count = 0
+        lines = lines.reverse.take_while do |line|
+          next false if stop_next
+
+          end_count += 1 if line.is_end?
+          kw_count += 1 if line.is_kw?
+
+          stop_next = true if !kw_count.zero? && kw_count >= end_count
+          true
+        end.reverse
+
+        next unless kw_count > end_count
+
+        lines = lines.select {|line| line.is_kw? || line.is_end? }
+
+        next if lines.empty?
+
+        @lines_to_output << lines.first
+        @lines_to_output << lines.last
+      end
     end
   end
 end
